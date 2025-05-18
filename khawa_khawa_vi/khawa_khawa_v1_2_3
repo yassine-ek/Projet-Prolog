@@ -1,0 +1,94 @@
+%%%%%%%%%%%%%%%%%%%%%%%%
+% KHAMA_KHAWA V1
+%%%%%%%%%%%%%%%%%%%%%%%%
+:- dynamic khawa_historique_v1/1.
+
+joue(khawa_khawa_v1, Historique, Coup) :-
+    retractall(khawa_historique_v1(_)),
+    assertz(khawa_historique_v1(Historique)),
+    length(Historique, NbTours),
+    ( NbTours < 20 ->
+         coup_apprentissage_v1(Coup)
+    ; NbTours < 80 ->
+         coup_adaptation_v1(Historique, Coup)
+    ;
+         coup_finale_v1(Coup)
+    ).
+
+coup_apprentissage_v1(Coup) :-
+    random_member(Coup, [3, 3, 4, 4, 2, 5, 1, 3, 4, 4]).
+coup_finale_v1(Coup) :-
+    random_between(3, 4, Coup).
+
+coup_adaptation_v1(Historique, Coup) :-
+    ( adversaire_repetitif(Historique), jouer_contre_repetitif(Historique, Coup)
+    ; adversaire_titfortat(Historique), jouer_contre_titfortat(Historique, Coup)
+    ; random_between(3, 4, Coup)
+    ).
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% KHAMA_KHAWA V2 (version optimisée)
+%%%%%%%%%%%%%%%%%%%%%%%%
+:- dynamic khawa_historique_v2/1.
+
+joue(khawa_khawa_v2, Historique, Coup) :-
+    retractall(khawa_historique_v2(_)),
+    assertz(khawa_historique_v2(Historique)),
+    length(Historique, NbTours),
+    ( NbTours < 15 ->
+         piège_pattern(Historique, Coup)
+    ;
+         contre_mesure_adaptative(Historique, Coup)
+    ).
+
+piège_pattern(Historique, Coup) :-
+    length(Historique, L),
+    Pattern = [3, 3, 4, 4],
+    Index is L mod 4,
+    nth0(Index, Pattern, Coup).
+
+contre_mesure_adaptative(Historique, Coup) :-
+    ( adversaire_repetitif(Historique), jouer_contre_repetitif(Historique, Coup)
+    ; adversaire_titfortat(Historique), jouer_contre_titfortat(Historique, Coup)
+    ; random_between(2, 5, Coup)
+    ).
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% KHAMA_KHAWA V3 (stratégie optimisée)
+%%%%%%%%%%%%%%%%%%%%%%%%
+:- dynamic khawa_historique_v3/1.
+
+joue(khawa_khawa_v3, Historique, Coup):-
+    retractall(khawa_historique_v3(_)),
+    assertz(khawa_historique_v3(Historique)),
+    length(Historique, NbTours),
+    ( NbTours = 0 ->
+         % Premier coup : choisir 3 comme valeur neutre
+         Coup = 3
+    ;
+         random(R),
+         ( R < 0.2 ->
+              % Avec 20% de chance, jouer totalement au hasard pour déstabiliser l’adversaire
+              random_between(1, 5, Coup)
+         ;
+              % Sinon, récupérer le dernier coup de l’adversaire et déterminer la meilleure réponse
+              dernier_adversaire(Historique, AdversaireCoup),
+              meilleure_reponse(AdversaireCoup, Reponse),
+              ( adversaire_repetitif(Historique) ->
+                   jouer_contre_repetitif(Historique, Coup)
+              ; adversaire_titfortat(Historique) ->
+                   jouer_contre_titfortat(Historique, Coup)
+              ;
+                   % Si notre dernier coup correspond déjà à la meilleure réponse et qu’une séquence est engagée,
+                   % continuer pour bénéficier du multiplicateur (seuil fixé ici à 2 répétitions ou plus)
+                   ( Historique = [[MyLast, _] | _],
+                     MyLast =:= Reponse,
+                     computeLongestPreviousSequence(MyLast, 1, Historique, SeqLength),
+                     SeqLength >= 2 ->
+                          Coup = MyLast
+                   ;
+                          Coup = Reponse
+                   )
+              )
+         )
+    ).
