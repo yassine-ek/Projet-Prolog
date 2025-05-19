@@ -1,4 +1,4 @@
-(library(random)).
+:- UseModule(library(random)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % first_n_elements(khawa_khawa, Count, List, PrefixElements)
